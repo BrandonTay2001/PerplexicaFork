@@ -50,17 +50,17 @@ const Navbar = ({ messages }: { messages: Message[] }) => {
       </div>
       <p className="hidden lg:flex">{title}</p>
 
-      <ThemeSwitcher size={17} className="lg:hidden ml-auto mr-4" />
+      {/* <ThemeSwitcher className="lg:hidden ml-auto mr-4" /> */}
 
       <div className="flex flex-row items-center space-x-4">
-        <Share
+        {/* <Share
           size={17}
           className="active:scale-95 transition duration-100 cursor-pointer"
         />
         <Trash
           size={17}
           className="text-red-400 active:scale-95 transition duration-100 cursor-pointer"
-        />
+        /> */}
       </div>
     </div>
   );

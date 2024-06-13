@@ -4,12 +4,23 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { getAvailableChatModelProviders } from '../lib/providers';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import logger from '../utils/logger';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
+
+// set cookies for state management
+// router.use((req, res, next) => {
+//   if (!req.cookies.uuid) {
+//     const uuid = uuidv4();
+//     res.cookie('uuid', uuid, { expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+//   }
+//   next();
+// });
 
 router.post('/', async (req, res) => {
   try {
     let { chat_history, chat_model, chat_model_provider } = req.body;
+    // const uuid = req.cookies.uuid;
 
     chat_history = chat_history.map((msg: any) => {
       if (msg.role === 'user') {

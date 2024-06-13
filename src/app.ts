@@ -5,6 +5,7 @@ import http from 'http';
 import routes from './routes';
 import { getPort } from './config';
 import logger from './utils/logger';
+import cookieParser from 'cookie-parser';
 
 const port = getPort();
 
@@ -17,6 +18,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+// app.use(cookieParser());
 
 app.use('/api', routes);
 app.get('/api', (_, res) => {

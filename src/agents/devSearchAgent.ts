@@ -20,19 +20,19 @@ import eventEmitter from 'events';
 import computeSimilarity from '../utils/computeSimilarity';
 import logger from '../utils/logger';
 
-const basicRedditSearchRetrieverPrompt = `
+const basicDevSearchRetrieverPrompt = `
 You will be given a conversation below and a follow up question. You need to rephrase the follow-up question if needed so it is a standalone question that can be used by the LLM to search the web for information.
 If it is a writing task or a simple hi, hello rather than a question, you need to return \`not_needed\` as the response.
 
 Example:
-1. Follow up question: Which company is most likely to create an AGI
-Rephrased: Which company is most likely to create an AGI
+1. Follow up question: How does an A.C work?
+Rephrased: A.C working
 
-2. Follow up question: Is Earth flat?
-Rephrased: Is Earth flat?
+2. Follow up question: Linear algebra explanation video
+Rephrased: What is linear algebra?
 
-3. Follow up question: Is there life on Mars?
-Rephrased: Is there life on Mars?
+3. Follow up question: What is theory of relativity?
+Rephrased: What is theory of relativity?
 
 Conversation:
 {chat_history}
@@ -41,8 +41,8 @@ Follow up question: {query}
 Rephrased question:
 `;
 
-const basicRedditSearchResponsePrompt = `
-    You are Perplexica, an AI model who is expert at searching the web and answering user's queries. You are set on focus mode 'Reddit', this means you will be searching for information, opinions and discussions on the web using Reddit.
+const basicDevSearchResponsePrompt = `
+    You are Perplexica, an AI model who is expert at searching the web and answering user's queries. You are set on focus mode 'Dev', this means you will be searching for videos on the web using Dev and providing information based on the video's transcript.
 
     Generate a response that is informative and relevant to the user's query based on provided context (the context consits of search results containg a brief description of the content of that page).
     You must use this context to answer the user's query in the best way possible. Use an unbaised and journalistic tone in your response. Do not repeat the text.
@@ -52,7 +52,7 @@ const basicRedditSearchResponsePrompt = `
     Place these citations at the end of that particular sentence. You can cite the same sentence multiple times if it is relevant to the user's query like [number1][number2].
     However you do not need to cite it using the same number. You can use different numbers to cite the same sentence multiple times. The number refers to the number of the search result (passed in the context) used to generate that part of the answer.
 
-    Aything inside the following \`context\` HTML block provided below is for your knowledge returned by Reddit and is not shared by the user. You have to answer question on the basis of it and cite the relevant information from it but you do not have to 
+    Aything inside the following \`context\` HTML block provided below is for your knowledge returned by various developer sites and is not shared by the user. You have to answer question on the basis of it and cite the relevant information from it but you do not have to 
     talk about the context in your response. 
 
     <context>
@@ -60,7 +60,7 @@ const basicRedditSearchResponsePrompt = `
     </context>
 
     If you think there's nothing relevant in the search results, you can say that 'Hmm, sorry I could not find any relevant information on this topic. Would you like me to search again or ask something else?'.
-    Anything between the \`context\` is retrieved from Reddit and is not a part of the conversation with the user. Today's date is ${new Date().toISOString()}
+    Anything between the \`context\` is retrieved from various developer forums and is not a part of the conversation with the user. Today's date is ${new Date().toISOString()}
 `;
 
 const strParser = new StringOutputParser();
@@ -102,9 +102,9 @@ type BasicChainInput = {
   query: string;
 };
 
-const createBasicRedditSearchRetrieverChain = (llm: BaseChatModel) => {
+const createBasicDevSearchRetrieverChain = (llm: BaseChatModel) => {
   return RunnableSequence.from([
-    PromptTemplate.fromTemplate(basicRedditSearchRetrieverPrompt),
+    PromptTemplate.fromTemplate(basicDevSearchRetrieverPrompt),
     llm,
     strParser,
     RunnableLambda.from(async (input: string) => {
@@ -114,7 +114,7 @@ const createBasicRedditSearchRetrieverChain = (llm: BaseChatModel) => {
 
       const res = await searchSearxng(input, {
         language: 'en',
-        engines: ['reddit'],
+        engines: ['github', 'stackoverflow', 'askubuntu'],
       });
 
       const documents = res.results.map(
@@ -134,12 +134,12 @@ const createBasicRedditSearchRetrieverChain = (llm: BaseChatModel) => {
   ]);
 };
 
-const createBasicRedditSearchAnsweringChain = (
+const createBasicDevSearchAnsweringChain = (
   llm: BaseChatModel,
   embeddings: Embeddings,
 ) => {
-  const basicRedditSearchRetrieverChain =
-    createBasicRedditSearchRetrieverChain(llm);
+  const basicDevSearchRetrieverChain =
+    createBasicDevSearchRetrieverChain(llm);
 
   const processDocs = async (docs: Document[]) => {
     return docs
@@ -194,7 +194,7 @@ const createBasicRedditSearchAnsweringChain = (
           query: input.query,
           chat_history: formatChatHistoryAsString(input.chat_history),
         }),
-        basicRedditSearchRetrieverChain
+        basicDevSearchRetrieverChain
           .pipe(rerankDocs)
           .withConfig({
             runName: 'FinalSourceRetriever',
@@ -203,7 +203,7 @@ const createBasicRedditSearchAnsweringChain = (
       ]),
     }),
     ChatPromptTemplate.fromMessages([
-      ['system', basicRedditSearchResponsePrompt],
+      ['system', basicDevSearchResponsePrompt],
       new MessagesPlaceholder('chat_history'),
       ['user', '{query}'],
     ]),
@@ -214,7 +214,7 @@ const createBasicRedditSearchAnsweringChain = (
   });
 };
 
-const basicRedditSearch = (
+const basicDevSearch = (
   query: string,
   history: BaseMessage[],
   llm: BaseChatModel,
@@ -223,9 +223,10 @@ const basicRedditSearch = (
   const emitter = new eventEmitter();
 
   try {
-    const basicRedditSearchAnsweringChain =
-      createBasicRedditSearchAnsweringChain(llm, embeddings);
-    const stream = basicRedditSearchAnsweringChain.streamEvents(
+    const basicDevSearchAnsweringChain =
+      createBasicDevSearchAnsweringChain(llm, embeddings);
+
+    const stream = basicDevSearchAnsweringChain.streamEvents(
       {
         chat_history: history,
         query: query,
@@ -241,20 +242,20 @@ const basicRedditSearch = (
       'error',
       JSON.stringify({ data: 'An error has occurred please try again later' }),
     );
-    logger.error(`Error in RedditSearch: ${err}`);
+    logger.error(`Error in youtube search: ${err}`);
   }
 
   return emitter;
 };
 
-const handleRedditSearch = (
+const handleDevSearch = (
   message: string,
   history: BaseMessage[],
   llm: BaseChatModel,
   embeddings: Embeddings,
 ) => {
-  const emitter = basicRedditSearch(message, history, llm, embeddings);
+  const emitter = basicDevSearch(message, history, llm, embeddings);
   return emitter;
 };
 
-export default handleRedditSearch;
+export default handleDevSearch;

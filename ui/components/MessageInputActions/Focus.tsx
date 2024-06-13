@@ -5,6 +5,9 @@ import {
   Pencil,
   ScanEye,
   SwatchBook,
+  Skull,
+  Code,
+  Newspaper
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, Transition } from '@headlessui/react';
@@ -31,34 +34,22 @@ const focusModes = [
     icon: <Pencil size={16} />,
   },
   {
-    key: 'wolframAlphaSearch',
-    title: 'Wolfram Alpha',
-    description: 'Computational knowledge engine',
-    icon: <BadgePercent size={20} />,
+    key: 'newsSearch',
+    title: 'News',
+    description: 'Search the latest news',
+    icon: <Newspaper size={20} />,
   },
   {
-    key: 'youtubeSearch',
-    title: 'Youtube',
-    description: 'Search and watch videos',
-    icon: (
-      <SiYoutube
-        className="h-5 w-auto mr-0.5"
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-      />
-    ),
+    key: 'devSearch',
+    title: 'Dev',
+    description: 'Get the answers to your development questions',
+    icon: <Code size={20} />,
   },
   {
-    key: 'redditSearch',
-    title: 'Reddit',
-    description: 'Search for discussions and opinions',
-    icon: (
-      <SiReddit
-        className="h-5 w-auto mr-0.5"
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-      />
-    ),
+    key: 'torrentSearch',
+    title: 'Torrent',
+    description: 'Search for your favorite torrents',
+    icon: <Skull size={20} />,
   },
 ];
 

@@ -19,7 +19,7 @@ import formatChatHistoryAsString from '../utils/formatHistory';
 import eventEmitter from 'events';
 import logger from '../utils/logger';
 
-const basicWolframAlphaSearchRetrieverPrompt = `
+const basicNewsSearchRetrieverPrompt = `
 You will be given a conversation below and a follow up question. You need to rephrase the follow-up question if needed so it is a standalone question that can be used by the LLM to search the web for information.
 If it is a writing task or a simple hi, hello rather than a question, you need to return \`not_needed\` as the response.
 
@@ -40,8 +40,8 @@ Follow up question: {query}
 Rephrased question:
 `;
 
-const basicWolframAlphaSearchResponsePrompt = `
-    You are Perplexica, an AI model who is expert at searching the web and answering user's queries. You are set on focus mode 'Wolfram Alpha', this means you will be searching for information on the web using Wolfram Alpha. It is a computational knowledge engine that can answer factual queries and perform computations.
+const basicNewsSearchResponsePrompt = `
+    You are Perplexica, an AI model who is expert at searching the web and answering user's queries. You are set on focus mode 'News', this means you will be searching for information on the web using various news sides. It is a computational knowledge engine that can answer factual queries and perform computations.
 
     Generate a response that is informative and relevant to the user's query based on provided context (the context consits of search results containg a brief description of the content of that page).
     You must use this context to answer the user's query in the best way possible. Use an unbaised and journalistic tone in your response. Do not repeat the text.
@@ -51,7 +51,7 @@ const basicWolframAlphaSearchResponsePrompt = `
     Place these citations at the end of that particular sentence. You can cite the same sentence multiple times if it is relevant to the user's query like [number1][number2].
     However you do not need to cite it using the same number. You can use different numbers to cite the same sentence multiple times. The number refers to the number of the search result (passed in the context) used to generate that part of the answer.
 
-    Aything inside the following \`context\` HTML block provided below is for your knowledge returned by Wolfram Alpha and is not shared by the user. You have to answer question on the basis of it and cite the relevant information from it but you do not have to 
+    Aything inside the following \`context\` HTML block provided below is for your knowledge returned by various news sites and is not shared by the user. You have to answer question on the basis of it and cite the relevant information from it but you do not have to 
     talk about the context in your response. 
 
     <context>
@@ -59,7 +59,7 @@ const basicWolframAlphaSearchResponsePrompt = `
     </context>
 
     If you think there's nothing relevant in the search results, you can say that 'Hmm, sorry I could not find any relevant information on this topic. Would you like me to search again or ask something else?'.
-    Anything between the \`context\` is retrieved from Wolfram Alpha and is not a part of the conversation with the user. Today's date is ${new Date().toISOString()}
+    Anything between the \`context\` is retrieved from various news sites and is not a part of the conversation with the user. Today's date is ${new Date().toISOString()}
 `;
 
 const strParser = new StringOutputParser();
@@ -101,9 +101,9 @@ type BasicChainInput = {
   query: string;
 };
 
-const createBasicWolframAlphaSearchRetrieverChain = (llm: BaseChatModel) => {
+const createBasicNewsSearchRetrieverChain = (llm: BaseChatModel) => {
   return RunnableSequence.from([
-    PromptTemplate.fromTemplate(basicWolframAlphaSearchRetrieverPrompt),
+    PromptTemplate.fromTemplate(basicNewsSearchRetrieverPrompt),
     llm,
     strParser,
     RunnableLambda.from(async (input: string) => {
@@ -113,7 +113,7 @@ const createBasicWolframAlphaSearchRetrieverChain = (llm: BaseChatModel) => {
 
       const res = await searchSearxng(input, {
         language: 'en',
-        engines: ['wolframalpha'],
+        engines: ['google news', 'yahoo news', 'bing news'],
       });
 
       const documents = res.results.map(
@@ -133,9 +133,9 @@ const createBasicWolframAlphaSearchRetrieverChain = (llm: BaseChatModel) => {
   ]);
 };
 
-const createBasicWolframAlphaSearchAnsweringChain = (llm: BaseChatModel) => {
-  const basicWolframAlphaSearchRetrieverChain =
-    createBasicWolframAlphaSearchRetrieverChain(llm);
+const createBasicNewsSearchAnsweringChain = (llm: BaseChatModel) => {
+  const basicNewsSearchRetrieverChain =
+    createBasicNewsSearchRetrieverChain(llm);
 
   const processDocs = (docs: Document[]) => {
     return docs
@@ -152,7 +152,7 @@ const createBasicWolframAlphaSearchAnsweringChain = (llm: BaseChatModel) => {
           query: input.query,
           chat_history: formatChatHistoryAsString(input.chat_history),
         }),
-        basicWolframAlphaSearchRetrieverChain
+        basicNewsSearchRetrieverChain
           .pipe(({ query, docs }) => {
             return docs;
           })
@@ -163,7 +163,7 @@ const createBasicWolframAlphaSearchAnsweringChain = (llm: BaseChatModel) => {
       ]),
     }),
     ChatPromptTemplate.fromMessages([
-      ['system', basicWolframAlphaSearchResponsePrompt],
+      ['system', basicNewsSearchResponsePrompt],
       new MessagesPlaceholder('chat_history'),
       ['user', '{query}'],
     ]),
@@ -174,7 +174,7 @@ const createBasicWolframAlphaSearchAnsweringChain = (llm: BaseChatModel) => {
   });
 };
 
-const basicWolframAlphaSearch = (
+const basicNewsSearch = (
   query: string,
   history: BaseMessage[],
   llm: BaseChatModel,
@@ -182,9 +182,9 @@ const basicWolframAlphaSearch = (
   const emitter = new eventEmitter();
 
   try {
-    const basicWolframAlphaSearchAnsweringChain =
-      createBasicWolframAlphaSearchAnsweringChain(llm);
-    const stream = basicWolframAlphaSearchAnsweringChain.streamEvents(
+    const basicNewsSearchAnsweringChain =
+      createBasicNewsSearchAnsweringChain(llm);
+    const stream = basicNewsSearchAnsweringChain.streamEvents(
       {
         chat_history: history,
         query: query,
@@ -200,20 +200,20 @@ const basicWolframAlphaSearch = (
       'error',
       JSON.stringify({ data: 'An error has occurred please try again later' }),
     );
-    logger.error(`Error in WolframAlphaSearch: ${err}`);
+    logger.error(`Error in NewsSearch: ${err}`);
   }
 
   return emitter;
 };
 
-const handleWolframAlphaSearch = (
+const handleNewsSearch = (
   message: string,
   history: BaseMessage[],
   llm: BaseChatModel,
   embeddings: Embeddings,
 ) => {
-  const emitter = basicWolframAlphaSearch(message, history, llm);
+  const emitter = basicNewsSearch(message, history, llm);
   return emitter;
 };
 
-export default handleWolframAlphaSearch;
+export default handleNewsSearch;

@@ -3,9 +3,9 @@ import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages';
 import handleWebSearch from '../agents/webSearchAgent';
 import handleAcademicSearch from '../agents/academicSearchAgent';
 import handleWritingAssistant from '../agents/writingAssistant';
-import handleWolframAlphaSearch from '../agents/wolframAlphaSearchAgent';
-import handleYoutubeSearch from '../agents/youtubeSearchAgent';
-import handleRedditSearch from '../agents/redditSearchAgent';
+import handleNewsSearch from '../agents/newsSearchAgent';
+import handleDevSearch from '../agents/devSearchAgent';
+import handleTorrentSearch from '../agents/torrentSearchAgent';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { Embeddings } from '@langchain/core/embeddings';
 import logger from '../utils/logger';
@@ -22,9 +22,9 @@ const searchHandlers = {
   webSearch: handleWebSearch,
   academicSearch: handleAcademicSearch,
   writingAssistant: handleWritingAssistant,
-  wolframAlphaSearch: handleWolframAlphaSearch,
-  youtubeSearch: handleYoutubeSearch,
-  redditSearch: handleRedditSearch,
+  newsSearch: handleNewsSearch,
+  devSearch: handleDevSearch,
+  torrentSearch: handleTorrentSearch,
 };
 
 const handleEmitterEvents = (

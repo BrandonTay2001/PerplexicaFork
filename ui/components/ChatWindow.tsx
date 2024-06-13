@@ -153,8 +153,46 @@ const ChatWindow = () => {
   const [focusMode, setFocusMode] = useState('webSearch');
 
   useEffect(() => {
+    const storedChatHistory = localStorage.getItem('chatHistory');
+    const storedMessages = localStorage.getItem('messages');
+
+    if (storedChatHistory) {
+      setChatHistory(JSON.parse(storedChatHistory));
+      console.log('set chat history: ', JSON.parse(storedChatHistory));
+    }
+    if (storedMessages) {
+      const parsedMessages = JSON.parse(storedMessages);
+      const cleanedMessages = parsedMessages.map((msg: Message) => {
+        return {
+          ...msg,
+          createdAt: new Date(msg.createdAt) as Date,
+        };
+      })
+      console.log('cleanedMessages: ', cleanedMessages);
+      setMessages(cleanedMessages);
+      console.log('set messages');
+    }
+    console.log('storedChatHistory: ', storedChatHistory);
+    console.log('storedMessages: ', storedMessages);
+  }, []);
+
+  useEffect(() => {
+    console.log('messages in useEffect: ', messages);
+    // const storedMessages = localStorage.getItem('messages');
+    // if (storedMessages && messages.length === 0) {
+    //   setMessages(JSON.parse(storedMessages));
+    //   messagesRef.current = JSON.parse(storedMessages);
+    //   console.log('set messages from storage: ', messagesRef.current);
+    //   return;
+    // }
+    localStorage.setItem('messages', JSON.stringify(messages));
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    console.log('chatHistory: ', chatHistory);
+  }, [chatHistory]);
 
   const sendMessage = async (message: string) => {
     if (loading) return;
